@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redux</title>
+
+  <script src="redux.min.js"></script>
+  <script src="immer.min.js"></script>
+  <style>
+    ul{
+      list-style: none;
+      line-height: 1.25rem;
+    }
+
+    ul span{
+      font-weight: bold;
+    }
+
+    button{
+      border: none;
+      padding: 1.1rem 1rem;
+      transition: .5s;
+      font-family: sans-serif;
+    }
+
+    button:is(#increase_time, #complete_course){
+      background: rgb(121, 185, 84);
+    }
+
+    button:is(#decrease_time, #reset_course){
+      background: rgb(207, 116, 94);
+    }
+    
+    button:is(#change_email, #complete_class){
+      background: rgb(117, 155, 228);
+    }
+
+    button:hover{
+      filter: opacity(0.9);
+      cursor: pointer;
+    }
+
+    #div-email, #div-class{
+      display: flex;
+      flex-direction: column;
+      max-width: 200px;
+      margin-top: 2rem;
+      gap: 1rem;
+    }
+
+  </style>
+</head>
+
+<body>
+  <h3>Student</h3>
+  <ul id="student"> 
+  </ul>
+
+  <h3>Classes</h3>
+  <ul id="classes">
+  </ul>
+
+  <button id="increase_time">Increase Student Days Left</button>
+  <button id="decrease_time">Decrease Student Days Left</button>
+  <button id="complete_course">Complete All Courses</button>
+  <button id="reset_course">Reset All Courses</button>
+  <div id="div-email">
+    <input type="text" id="email">
+    <button id="change_email">Change Email</button>
+  </div>
+  <div id="div-class">
+    <input type="number" id="class">
+    <button id="complete_class">Complete Class By ID</button>
+  </div>
+
+  <script type="module">
+    const INCREASE_TIME = () =>  ({type: 'INCREASE_TIME'});
+    const DECREASE_TIME = () => ({type: 'DECREASE_TIME'});
+    const MODIFY_EMAIL = (email) => ({type: 'MODIFY_EMAIL', payload: email });
+    const COMPLETE_CLASS = (id) => ({type: 'COMPLETE_CLASS', payload: id});
+    const COMPLETE_COURSE = () => ({type: 'COMPLETE_COURSE'});
+    const RESET_COURSE = ()=> ({type: 'RESET_COURSE' });
+
+    const studentInitialState  = {
+      name: 'André Rafael',
+      email: 'andre@origamid.com',
+      daysLeft: 120
+    };
+
+    const classesInitialState = [
+      {
+        id: 1,
+        name: 'Design',
+        complete: true,
+      },
+      {
+        id: 2,
+        name: 'HTML',
+        complete: false,
+      },
+      {
+        id: 3,
+        name: 'CSS',
+        complete: false,
+      },
+      {
+        id: 4,
+        name: 'JavaScript',
+        complete: false,
+      },
+    ];
+
+  const reducerStudent = immer.produce((state, action) => {
+    switch(action.type){
+      case 'INCREASE_TIME':
+        state.daysLeft++;
+        break;
+      case 'DECREASE_TIME':
+        state.daysLeft--;
+        break;
+      case 'MODIFY_EMAIL':
+        state.email = action.payload;
+        break;
+    }
+  }, studentInitialState);
+
+  const reducerClasses = immer.produce((state, action) => {
+    switch(action.type){
+      case 'COMPLETE_CLASS':
+        const index = state.findIndex((x) =>
+        x.id == action.payload
+        );
+        if (!isNaN(index) && state[index]) state[index].complete = true;
+        break;
+      case 'COMPLETE_COURSE':
+        state.forEach(ele => ele.complete = true)
+        break;
+      case 'RESET_COURSE':
+        state.forEach(ele => ele.complete = false)
+        break;
+    }
+  },classesInitialState)
+
+  const reducer = Redux.combineReducers({reducerStudent, reducerClasses})
+
+  const store = Redux.createStore(reducer,  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
+
+  function renderStudent(){
+    const studentState = store.getState().reducerStudent;
+
+    document.getElementById('student').innerHTML = '';
+    Object.keys(studentState).forEach((ele, keys) => {
+      document.getElementById('student').innerHTML+= `<li>${ele}: <span>${studentState[ele]}</span></li>`
+    })
+  }
+
+  function renderClasses(){
+    const classesState = store.getState().reducerClasses;
+    document.getElementById('classes').innerHTML = '';
+    classesState.forEach(classes => {
+      Object.keys(classes).forEach((ele, keys) => {
+        document.getElementById('classes').innerHTML+= `<li>${ele}: <span>${classes[ele]}</span></li>`
+      })
+      document.getElementById('classes').innerHTML+= `<br />`
+    })
+  }
+
+  store.subscribe(renderStudent);
+  store.subscribe(renderClasses);
+  renderStudent();
+  renderClasses();
+
+  document.getElementById('increase_time').addEventListener('click', () => store.dispatch(INCREASE_TIME()))
+  document.getElementById('decrease_time').addEventListener('click', () => store.dispatch(DECREASE_TIME()))
+  document.getElementById('complete_course').addEventListener('click', () => store.dispatch(COMPLETE_COURSE()))
+  document.getElementById('reset_course').addEventListener('click', () => store.dispatch(RESET_COURSE()))
+  document.getElementById('change_email').addEventListener('click', () => store.dispatch(MODIFY_EMAIL(document.getElementById('email').value)))
+  document.getElementById('complete_class').addEventListener('click', () => store.dispatch(COMPLETE_CLASS(document.getElementById('class').value)))
+  
+  </script>
+
+</body>
+
+</html>
